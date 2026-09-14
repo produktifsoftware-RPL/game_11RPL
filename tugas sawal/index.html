@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenis Meja 2 Pemain</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #111827;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            text-align: center;
+            width: 95%;
+            max-width: 1000px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #22c55e;
+        }
+
+        .info {
+            margin-bottom: 15px;
+            color: #d1d5db;
+            font-size: 15px;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 900px;
+            background: #15803d;
+            border: 5px solid white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .score {
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+            font-size: 40px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .player1 {
+            color: #38bdf8;
+        }
+
+        .player2 {
+            color: #f87171;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background: #22c55e;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        #message {
+            margin-top: 10px;
+            min-height: 25px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .score {
+                gap: 50px;
+                font-size: 30px;
+            }
+
+            .info {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="game-container">
+
+    <h1>🏓 TENIS MEJA</h1>
+
+    <div class="info">
+        Player 1: <b>W / S</b>
+        &nbsp;&nbsp; | &nbsp;&nbsp;
+        Player 2: <b>↑ / ↓</b>
+    </div>
+
+    <div class="score">
+        <div class="player1">
+            P1: <span id="score1">0</span>
+        </div>
+
+        <div class="player2">
+            P2: <span id="score2">0</span>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="900" height="500"></canvas>
+
+    <div id="message">Pertandingan dimulai!</div>
+
+    <button onclick="restartGame()">🔄 Mulai Ulang</button>
+
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const score1Text = document.getElementById("score1");
+const score2Text = document.getElementById("score2");
+const message = document.getElementById("message");
+
+
+// ===============================
+// PENGATURAN GAME
+// ===============================
+
+const paddleWidth = 18;
+const paddleHeight = 110;
+
+const player1 = {
+    x: 30,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    speed: 7
+};
+
+const player2 = {
+    x: canvas.width - 48,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    speed: 7
+};
+
+
+// Bola
+const ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 10,
+    speedX: 6,
+    speedY: 4
+};
+
+
+// Skor
+let score1 = 0;
+let score2 = 0;
+
+const winningScore = 7;
+
+
+// Tombol keyboard
+const keys = {};
+
+document.addEventListener("keydown", function(e) {
+
+    keys[e.key.toLowerCase()] = true;
+
+    // Cegah halaman scroll
+    if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === " "
+    ) {
+        e.preventDefault();
+    }
+
+    if (e.key.toLowerCase() === "r") {
+        restartGame();
+    }
+
+});
+
+document.addEventListener("keyup", function(e) {
+    keys[e.key.toLowerCase()] = false;
+});
+
+
+// ===============================
+// RESET BOLA
+// ===============================
+
+function resetBall(direction) {
+
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+
+    ball.speedX = 6 * direction;
+
+    // Arah Y random
+    ball.speedY = (Math.random() > 0.5 ? 4 : -4);
+}
+
+
+// ===============================
+// UPDATE GAME
+// ===============================
+
+function update() {
+
+    // Player 1
+    if (keys["w"]) {
+        player1.y -= player1.speed;
+    }
+
+    if (keys["s"]) {
+        player1.y += player1.speed;
+    }
+
+
+    // Player 2
+    if (keys["arrowup"]) {
+        player2.y -= player2.speed;
+    }
+
+    if (keys["arrowdown"]) {
+        player2.y += player2.speed;
+    }
+
+
+    // Batas Player 1
+    if (player1.y < 0) {
+        player1.y = 0;
+    }
+
+    if (player1.y + player1.height > canvas.height) {
+        player1.y = canvas.height - player1.height;
+    }
+
+
+    // Batas Player 2
+    if (player2.y < 0) {
+        player2.y = 0;
+    }
+
+    if (player2.y + player2.height > canvas.height) {
+        player2.y = canvas.height - player2.height;
+    }
+
+
+    // Gerakan bola
+    ball.x += ball.speedX;
+    ball.y += ball.speedY;
+
+
+    // Pantulan atas
+    if (ball.y - ball.radius <= 0) {
+        ball.y = ball.radius;
+        ball.speedY *= -1;
+    }
+
+
+    // Pantulan bawah
+    if (ball.y + ball.radius >= canvas.height) {
+        ball.y = canvas.height - ball.radius;
+        ball.speedY *= -1;
+    }
+
+
+    // ===============================
+    // TABRAKAN PLAYER 1
+    // ===============================
+
+    if (
+        ball.x - ball.radius <= player1.x + player1.width &&
+        ball.x + ball.radius >= player1.x &&
+        ball.y >= player1.y &&
+        ball.y <= player1.y + player1.height &&
+        ball.speedX < 0
+    ) {
+
+        ball.x = player1.x + player1.width + ball.radius;
+
+        ball.speedX *= -1.08;
+
+        // Efek arah berdasarkan posisi pukulan
+        const hitPosition =
+            (ball.y - player1.y) / player1.height;
+
+        ball.speedY =
+            (hitPosition - 0.5) * 10;
+    }
+
+
+    // ===============================
+    // TABRAKAN PLAYER 2
+    // ===============================
+
+    if (
+        ball.x + ball.radius >= player2.x &&
+        ball.x - ball.radius <= player2.x + player2.width &&
+        ball.y >= player2.y &&
+        ball.y <= player2.y + player2.height &&
+        ball.speedX > 0
+    ) {
+
+        ball.x =
+            player2.x - ball.radius;
+
+        ball.speedX *= -1.08;
+
+        const hitPosition =
+            (ball.y - player2.y) / player2.height;
+
+        ball.speedY =
+            (hitPosition - 0.5) * 10;
+    }
+
+
+    // ===============================
+    // PLAYER 2 KEHILANGAN BOLA
+    // ===============================
+
+    if (ball.x < 0) {
+
+        score2++;
+
+        updateScore();
+
+        checkWinner();
+
+        if (score2 < winningScore) {
+            resetBall(1);
+        }
+    }
+
+
+    // ===============================
+    // PLAYER 1 KEHILANGAN BOLA
+    // ===============================
+
+    if (ball.x > canvas.width) {
+
+        score1++;
+
+        updateScore();
+
+        checkWinner();
+
+        if (score1 < winningScore) {
+            resetBall(-1);
+        }
+    }
+
+}
+
+
+// ===============================
+// GAMBAR LAPANGAN
+// ===============================
+
+function drawTable() {
+
+    // Background meja
+    ctx.fillStyle = "#15803d";
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    // Garis luar
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+
+    ctx.strokeRect(
+        2,
+        2,
+        canvas.width - 4,
+        canvas.height - 4
+    );
+
+
+    // Garis tengah
+    ctx.setLineDash([15, 15]);
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        canvas.width / 2,
+        0
+    );
+
+    ctx.lineTo(
+        canvas.width / 2,
+        canvas.height
+    );
+
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+
+    // Net
+    ctx.fillStyle = "#eeeeee";
+
+    ctx.fillRect(
+        canvas.width / 2 - 4,
+        0,
+        8,
+        canvas.height
+    );
+}
+
+
+// ===============================
+// GAMBAR PLAYER
+// ===============================
+
+function drawPaddle(player, color) {
+
+    ctx.fillStyle = color;
+
+    ctx.fillRect(
+        player.x,
+        player.y,
+        player.width,
+        player.height
+    );
+
+
+    // Highlight
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+
+    ctx.fillRect(
+        player.x + 4,
+        player.y + 5,
+        5,
+        player.height - 10
+    );
+}
+
+
+// ===============================
+// GAMBAR BOLA
+// ===============================
+
+function drawBall() {
+
+    ctx.beginPath();
+
+    ctx.arc(
+        ball.x,
+        ball.y,
+        ball.radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.fill();
+
+    ctx.closePath();
+}
+
+
+// ===============================
+// DRAW
+// ===============================
+
+function draw() {
+
+    drawTable();
+
+    drawPaddle(
+        player1,
+        "#38bdf8"
+    );
+
+    drawPaddle(
+        player2,
+        "#f87171"
+    );
+
+    drawBall();
+}
+
+
+// ===============================
+// UPDATE SCORE
+// ===============================
+
+function updateScore() {
+
+    score1Text.textContent = score1;
+    score2Text.textContent = score2;
+}
+
+
+// ===============================
+// CEK PEMENANG
+// ===============================
+
+function checkWinner() {
+
+    if (score1 >= winningScore) {
+
+        message.textContent =
+            "🏆 PLAYER 1 MENANG! Tekan R untuk bermain lagi.";
+
+        stopGame = true;
+    }
+
+
+    if (score2 >= winningScore) {
+
+        message.textContent =
+            "🏆 PLAYER 2 MENANG! Tekan R untuk bermain lagi.";
+
+        stopGame = true;
+    }
+}
+
+
+// ===============================
+// RESTART
+// ===============================
+
+function restartGame() {
+
+    score1 = 0;
+    score2 = 0;
+
+    updateScore();
+
+    player1.y =
+        canvas.height / 2 - paddleHeight / 2;
+
+    player2.y =
+        canvas.height / 2 - paddleHeight / 2;
+
+    stopGame = false;
+
+    resetBall(
+        Math.random() > 0.5 ? 1 : -1
+    );
+
+    message.textContent =
+        "Pertandingan dimulai!";
+}
+
+
+// ===============================
+// GAME LOOP
+// ===============================
+
+let stopGame = false;
+
+function gameLoop() {
+
+    if (!stopGame) {
+        update();
+    }
+
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
+
+// Mulai game
+resetBall(
+    Math.random() > 0.5 ? 1 : -1
+);
+
+gameLoop();
+
+</script>
+
+</body>
+</html>
