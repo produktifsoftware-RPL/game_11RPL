@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duel Arena - 2 Player</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #111827, #1e1b4b);
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game {
+  width: min(950px, 95%);
+  text-align: center;
+}
+
+h1 {
+  color: #facc15;
+  margin-bottom: 8px;
+  font-size: clamp(28px, 5vw, 50px);
+  text-shadow: 0 0 20px #facc15;
+}
+
+.subtitle {
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.player {
+  flex: 1;
+  padding: 15px;
+  border-radius: 15px;
+  background: #1e293b;
+  border: 2px solid #475569;
+}
+
+.player.one {
+  border-color: #22d3ee;
+}
+
+.player.two {
+  border-color: #fb7185;
+}
+
+.player h2 {
+  margin-bottom: 10px;
+}
+
+.health {
+  height: 20px;
+  background: #0f172a;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.health-bar {
+  height: 100%;
+  width: 100%;
+  transition: width .25s;
+}
+
+.hp1 {
+  background: linear-gradient(90deg, #06b6d4, #22d3ee);
+}
+
+.hp2 {
+  background: linear-gradient(90deg, #f43f5e, #fb7185);
+}
+
+.arena {
+  position: relative;
+  height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 3px solid #64748b;
+  background:
+    radial-gradient(circle at 50% 30%, #334155 0 2px, transparent 3px),
+    linear-gradient(#172033 0 70%, #0f172a 70%);
+}
+
+.arena::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+  background: repeating-linear-gradient(
+    90deg,
+    #111827 0 40px,
+    #1e293b 40px 80px
+  );
+  opacity: .8;
+}
+
+.fighter {
+  position: absolute;
+  bottom: 70px;
+  width: 55px;
+  height: 75px;
+  border-radius: 20px 20px 10px 10px;
+  z-index: 5;
+  transition: transform .05s;
+}
+
+.fighter::before {
+  content: "";
+  position: absolute;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  top: -35px;
+  left: 5px;
+  background: inherit;
+}
+
+.p1 {
+  left: 70px;
+  background: #06b6d4;
+  box-shadow: 0 0 25px #06b6d4;
+}
+
+.p2 {
+  right: 70px;
+  background: #f43f5e;
+  box-shadow: 0 0 25px #f43f5e;
+}
+
+.projectile {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 0 15px currentColor;
+}
+
+.bullet1 {
+  background: #22d3ee;
+  color: #22d3ee;
+}
+
+.bullet2 {
+  background: #fb7185;
+  color: #fb7185;
+}
+
+.controls {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.control-box {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.control-box h3 {
+  margin-bottom: 8px;
+}
+
+kbd {
+  display: inline-block;
+  background: #0f172a;
+  border: 1px solid #64748b;
+  padding: 6px 9px;
+  border-radius: 7px;
+  margin: 3px;
+  color: #f8fafc;
+}
+
+button {
+  margin-top: 18px;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 10px;
+  background: #facc15;
+  color: #111827;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #fde047;
+  transform: scale(1.04);
+}
+
+#message {
+  min-height: 28px;
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #facc15;
+}
+
+@media (max-width: 650px) {
+  .arena {
+    height: 330px;
+  }
+
+  .p1 {
+    left: 30px;
+  }
+
+  .p2 {
+    right: 30px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+  <h1>⚔️ DUEL ARENA</h1>
+  <p class="subtitle">Pertarungan 2 pemain — kalahkan lawanmu!</p>
+
+  <div class="scoreboard">
+
+    <div class="player one">
+      <h2>🔵 PLAYER 1</h2>
+      <div class="health">
+        <div id="hp1" class="health-bar hp1"></div>
+      </div>
+      <p id="textHp1">100 HP</p>
+    </div>
+
+    <div class="player two">
+      <h2>🔴 PLAYER 2</h2>
+      <div class="health">
+        <div id="hp2" class="health-bar hp2"></div>
+      </div>
+      <p id="textHp2">100 HP</p>
+    </div>
+
+  </div>
+
+  <div id="arena" class="arena">
+
+    <div id="fighter1" class="fighter p1"></div>
+    <div id="fighter2" class="fighter p2"></div>
+
+  </div>
+
+  <div id="message">Pertandingan dimulai!</div>
+
+  <div class="controls">
+
+    <div class="control-box">
+      <h3>🔵 PLAYER 1</h3>
+      <kbd>W</kbd> Lompat
+      <kbd>A</kbd> Kiri
+      <kbd>D</kbd> Kanan
+      <kbd>F</kbd> Tembak
+    </div>
+
+    <div class="control-box">
+      <h3>🔴 PLAYER 2</h3>
+      <kbd>↑</kbd> Lompat
+      <kbd>←</kbd> Kiri
+      <kbd>→</kbd> Kanan
+      <kbd>/</kbd> Tembak
+    </div>
+
+  </div>
+
+  <button onclick="resetGame()">🔄 MAIN LAGI</button>
+
+</div>
+
+<script>
+const arena = document.getElementById("arena");
+const fighter1 = document.getElementById("fighter1");
+const fighter2 = document.getElementById("fighter2");
+
+const hp1Bar = document.getElementById("hp1");
+const hp2Bar = document.getElementById("hp2");
+
+const textHp1 = document.getElementById("textHp1");
+const textHp2 = document.getElementById("textHp2");
+
+const message = document.getElementById("message");
+
+const keys = {};
+
+let p1 = {
+  x: 70,
+  y: 0,
+  hp: 100,
+  vy: 0,
+  grounded: true,
+  cooldown: 0
+};
+
+let p2 = {
+  x: 0,
+  y: 0,
+  hp: 100,
+  vy: 0,
+  grounded: true,
+  cooldown: 0
+};
+
+let gameOver = false;
+let projectiles = [];
+
+document.addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+
+  if (
+    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener("keyup", e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+function resetGame() {
+
+  const arenaWidth = arena.clientWidth;
+
+  p1 = {
+    x: 70,
+    y: 0,
+    hp: 100,
+    vy: 0,
+    grounded: true,
+    cooldown: 0
+  };
+
+  p2 = {
+    x: arenaWidth - 125,
+    y: 0,
+    hp: 100,
+    vy: 0,
+    grounded: true,
+    cooldown: 0
+  };
+
+  projectiles = [];
+  gameOver = false;
+
+  message.textContent = "Pertandingan dimulai!";
+
+  update();
+}
+
+function jump(player) {
+
+  if (player.grounded) {
+    player.vy = -12;
+    player.grounded = false;
+  }
+}
+
+function movePlayers() {
+
+  const speed = 5;
+  const maxX = arena.clientWidth - 125;
+
+  // PLAYER 1
+  if (keys["a"]) p1.x -= speed;
+  if (keys["d"]) p1.x += speed;
+
+  if (keys["w"]) {
+    jump(p1);
+    keys["w"] = false;
+  }
+
+  // PLAYER 2
+  if (keys["arrowleft"]) p2.x -= speed;
+  if (keys["arrowright"]) p2.x += speed;
+
+  if (keys["arrowup"]) {
+    jump(p2);
+    keys["arrowup"] = false;
+  }
+
+  p1.x = Math.max(0, Math.min(maxX, p1.x));
+  p2.x = Math.max(0, Math.min(maxX, p2.x));
+}
+
+function physics(player) {
+
+  player.vy += 0.6;
+  player.y += player.vy;
+
+  if (player.y >= 0) {
+    player.y = 0;
+    player.vy = 0;
+    player.grounded = true;
+  }
+}
+
+function shoot(player, owner) {
+
+  if (player.cooldown > 0 || gameOver) return;
+
+  player.cooldown = 25;
+
+  const bullet = document.createElement("div");
+
+  bullet.className =
+    "projectile " + (owner === 1 ? "bullet1" : "bullet2");
+
+  const direction = owner === 1 ? 1 : -1;
+
+  const bulletX = player.x + (owner === 1 ? 55 : 0);
+
+  bullet.style.left = bulletX + "px";
+  bullet.style.bottom = (100 + player.y) + "px";
+
+  arena.appendChild(bullet);
+
+  projectiles.push({
+    element: bullet,
+    x: bulletX,
+    direction,
+    owner
+  });
+}
+
+function updateProjectiles() {
+
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+
+    const bullet = projectiles[i];
+
+    bullet.x += bullet.direction * 9;
+
+    bullet.element.style.left = bullet.x + "px";
+
+    const target = bullet.owner === 1 ? p2 : p1;
+
+    const targetX = target.x;
+
+    if (
+      Math.abs(bullet.x - targetX) < 50
+    ) {
+
+      target.hp -= 10;
+
+      target.hp = Math.max(0, target.hp);
+
+      bullet.element.remove();
+
+      projectiles.splice(i, 1);
+
+      checkWinner();
+
+      continue;
+    }
+
+    if (
+      bullet.x < -30 ||
+      bullet.x > arena.clientWidth + 30
+    ) {
+
+      bullet.element.remove();
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+function checkWinner() {
+
+  if (p1.hp <= 0) {
+    gameOver = true;
+    message.textContent = "🏆 PLAYER 2 MENANG!";
+  }
+
+  if (p2.hp <= 0) {
+    gameOver = true;
+    message.textContent = "🏆 PLAYER 1 MENANG!";
+  }
+}
+
+function update() {
+
+  if (!gameOver) {
+
+    movePlayers();
+
+    physics(p1);
+    physics(p2);
+
+    if (keys["f"]) {
+      shoot(p1, 1);
+      keys["f"] = false;
+    }
+
+    if (keys["/"]) {
+      shoot(p2, 2);
+      keys["/"] = false;
+    }
+
+    if (p1.cooldown > 0) p1.cooldown--;
+    if (p2.cooldown > 0) p2.cooldown--;
+
+    updateProjectiles();
+  }
+
+  fighter1.style.left = p1.x + "px";
+  fighter1.style.bottom = (70 - p1.y) + "px";
+
+  fighter2.style.left = p2.x + "px";
+  fighter2.style.bottom = (70 - p2.y) + "px";
+
+  hp1Bar.style.width = p1.hp + "%";
+  hp2Bar.style.width = p2.hp + "%";
+
+  textHp1.textContent = p1.hp + " HP";
+  textHp2.textContent = p2.hp + " HP";
+
+  requestAnimationFrame(update);
+}
+
+window.addEventListener("resize", () => {
+
+  const maxX = arena.clientWidth - 125;
+
+  p1.x = Math.min(p1.x, maxX);
+  p2.x = Math.min(p2.x, maxX);
+
+});
+
+resetGame();
+</script>
+
+</body>
+</html>
